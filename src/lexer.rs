@@ -31,24 +31,44 @@ impl<'a> Lexer<'a> {
         self.read_position += 1;
     }
 
-    fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
         let token = match self.ch {
-            b'=' => Token::ASSIGN,
+            b'=' => {
+                if self.peek_char() == b'=' {
+                    self.read_char();
+                    Token::EQ
+                } else {
+                    Token::ASSIGN
+                }
+            }
             b';' => Token::SEMICOLON,
             b'(' => Token::LPAREN,
             b')' => Token::RPAREN,
             b',' => Token::COMMA,
             b'+' => Token::PLUS,
+            b'-' => Token::MINUS,
+            b'!' => {
+                if self.peek_char() == b'=' {
+                    self.read_char();
+                    Token::NE
+                } else {
+                    Token::BANG
+                }
+            }
+            b'*' => Token::ASTERISK,
+            b'/' => Token::SLASH,
+            b'<' => Token::LT,
+            b'>' => Token::GT,
             b'{' => Token::LBRACE,
             b'}' => Token::RBRACE,
             0 => Token::EOF,
             _ => {
                 if is_letter(self.ch) {
-                    self.read_identifier()
+                    return self.read_identifier();
                 } else if is_digit(self.ch) {
-                    self.read_number()
+                    return self.read_number();
                 } else {
                     Token::ILLEGAL
                 }
@@ -67,6 +87,11 @@ impl<'a> Lexer<'a> {
         match &self.input[position..self.position] {
             "fn" => Token::FUNCTION,
             "let" => Token::LET,
+            "true" => Token::BOOL(true),
+            "false" => Token::BOOL(false),
+            "if" => Token::IF,
+            "else" => Token::ELSE,
+            "return" => Token::RETURN,
             ident => Token::IDENT(ident.to_string()),
         }
     }
@@ -82,6 +107,14 @@ impl<'a> Lexer<'a> {
     fn skip_whitespace(&mut self) {
         while self.ch.is_ascii_whitespace() {
             self.read_char();
+        }
+    }
+
+    fn peek_char(&mut self) -> u8 {
+        if self.read_position >= self.input.len() {
+            0
+        } else {
+            self.input.as_bytes()[self.read_position]
         }
     }
 }
