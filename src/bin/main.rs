@@ -1,4 +1,4 @@
-use rust_monkey::{lexer::Lexer, token::Token};
+use rust_monkey::{lexer::Lexer, parser::Parser};
 use rustyline::DefaultEditor;
 
 fn main() {
@@ -6,14 +6,10 @@ fn main() {
     loop {
         match rl.readline(">> ") {
             Ok(line) => {
-                let mut lexer = Lexer::new(&line);
-
-                loop {
-                    match lexer.next_token() {
-                        Token::EOF => break,
-                        token => println!("{:?}", token),
-                    }
-                }
+                let lexer = Lexer::new(&line);
+                let mut parser = Parser::new(lexer);
+                let program = parser.parse_program();
+                println!("{:?}", program)
             }
             Err(err) => {
                 println!("Error: {}", err);

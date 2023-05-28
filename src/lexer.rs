@@ -120,7 +120,7 @@ impl<'a> Lexer<'a> {
 }
 
 fn is_letter(ch: u8) -> bool {
-    (b'a'..=b'z').contains(&ch) || (b'A'..=b'Z').contains(&ch) || ch == b'_'
+    ch.is_ascii_lowercase() || ch.is_ascii_uppercase() || ch == b'_'
 }
 
 fn is_digit(ch: u8) -> bool {
