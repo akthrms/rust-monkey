@@ -56,7 +56,7 @@ impl Display for Token {
             Token::RPAREN => write!(f, ")"),
             Token::LBRACE => write!(f, "{{"),
             Token::RBRACE => write!(f, "}}"),
-            Token::FUNCTION => write!(f, "fun"),
+            Token::FUNCTION => write!(f, "fn"),
             Token::LET => write!(f, "let"),
             Token::RETURN => write!(f, "return"),
         }
