@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Ident, Infix, Precedence, Prefix, Program, Stmt},
+    ast::{BlockStmt, Expr, Ident, Infix, Precedence, Prefix, Program, Stmt},
     lexer::Lexer,
     token::Token,
 };
@@ -27,6 +27,10 @@ impl<'a> Parser<'a> {
     fn next_token(&mut self) {
         self.cur_token = self.peek_token.clone();
         self.peek_token = self.lexer.next_token();
+    }
+
+    fn is_cur_token(&self, token: &Token) -> bool {
+        self.cur_token == *token
     }
 
     fn is_peek_token(&self, token: &Token) -> bool {
@@ -59,7 +63,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse_program(&mut self) -> Program {
         let mut program = Vec::new();
-        while self.cur_token != Token::EOF {
+        while !self.is_cur_token(&Token::EOF) {
             if let Some(stmt) = self.parse_stmt() {
                 program.push(stmt);
             }
@@ -122,12 +126,26 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_block_stmt(&mut self) -> BlockStmt {
+        self.next_token();
+        let mut stmts = Vec::new();
+        while !self.is_cur_token(&Token::RBRACE) && !self.is_cur_token(&Token::EOF) {
+            if let Some(stmt) = self.parse_stmt() {
+                stmts.push(stmt);
+            }
+            self.next_token();
+        }
+        stmts
+    }
+
     fn parse_expr(&mut self, precedence: Precedence) -> Option<Expr> {
         let mut left = match self.cur_token {
             Token::IDENT(_) => self.parse_ident_expr()?,
             Token::INT(_) => self.parse_int_expr()?,
             Token::BOOL(_) => self.parse_bool_expr()?,
             Token::MINUS | Token::BANG => self.parse_prefix_expr()?,
+            Token::LPAREN => self.parse_grouped_expr()?,
+            Token::IF => self.parse_if_expr()?,
             _ => {
                 self.no_prefix_error();
                 return None;
@@ -179,6 +197,45 @@ impl<'a> Parser<'a> {
         self.next_token();
         self.parse_expr(precedence)
             .map(|right| Expr::Infix(infix, Box::new(left), Box::new(right)))
+    }
+
+    fn parse_grouped_expr(&mut self) -> Option<Expr> {
+        self.next_token();
+        let expr = self.parse_expr(Precedence::Lowest)?;
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+        Some(expr)
+    }
+
+    fn parse_if_expr(&mut self) -> Option<Expr> {
+        if !self.expect_peek(Token::LPAREN) {
+            return None;
+        }
+        self.next_token();
+        let cond = self.parse_expr(Precedence::Lowest)?;
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+        if !self.expect_peek(Token::LBRACE) {
+            return None;
+        }
+        let cons = self.parse_block_stmt();
+        if !self.is_cur_token(&Token::RBRACE) {
+            return None;
+        }
+        let mut alt = None;
+        if self.is_peek_token(&Token::ELSE) {
+            self.next_token();
+            if !self.expect_peek(Token::LBRACE) {
+                return None;
+            }
+            alt = Some(self.parse_block_stmt());
+            if !self.is_cur_token(&Token::RBRACE) {
+                return None;
+            }
+        }
+        Some(Expr::If(Box::new(cond), cons, alt))
     }
 
     fn parse_ident(&mut self) -> Option<Ident> {

@@ -59,6 +59,7 @@ pub enum Expr {
     Bool(bool),
     Prefix(Prefix, Box<Expr>),
     Infix(Infix, Box<Expr>, Box<Expr>),
+    If(Box<Expr>, BlockStmt, Option<BlockStmt>),
 }
 
 impl Display for Expr {
@@ -69,6 +70,27 @@ impl Display for Expr {
             Expr::Bool(value) => write!(f, "{}", value),
             Expr::Prefix(prefix, expr) => write!(f, "{}{}", prefix, expr),
             Expr::Infix(infix, left, right) => write!(f, "({} {} {})", left, infix, right),
+            Expr::If(cond, cons, alt) => {
+                write!(
+                    f,
+                    "if {} {{{}}}{}",
+                    cond,
+                    cons.iter()
+                        .map(|stmt| stmt.to_string())
+                        .collect::<Vec<String>>()
+                        .join(" "),
+                    match alt {
+                        Some(alt) => format!(
+                            " else {{{}}}",
+                            alt.iter()
+                                .map(|stmt| stmt.to_string())
+                                .collect::<Vec<String>>()
+                                .join(" "),
+                        ),
+                        _ => "".to_string(),
+                    }
+                )
+            }
         }
     }
 }
@@ -89,6 +111,8 @@ impl Display for Stmt {
         }
     }
 }
+
+pub type BlockStmt = Vec<Stmt>;
 
 pub type Program = Vec<Stmt>;
 
