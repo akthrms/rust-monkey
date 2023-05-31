@@ -9,7 +9,11 @@ fn main() {
                 let lexer = Lexer::new(&line);
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program();
-                println!("{:?}", program)
+                if parser.errors().is_empty() {
+                    println!("{:?}", program);
+                } else {
+                    println!("{:?}", parser.errors());
+                }
             }
             Err(err) => {
                 println!("Error: {}", err);
