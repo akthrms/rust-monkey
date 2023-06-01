@@ -150,12 +150,13 @@ impl<'a> Parser<'a> {
             Token::MINUS | Token::BANG => self.parse_prefix_expr()?,
             Token::LPAREN => self.parse_grouped_expr()?,
             Token::IF => self.parse_if_expr()?,
+            Token::FUNCTION => self.parse_function_expr()?,
             _ => {
                 self.no_prefix_error();
                 return None;
             }
         };
-        while !self.expect_peek(Token::SEMICOLON) && precedence < (&self.peek_token).into() {
+        while !self.is_peek_token(&Token::SEMICOLON) && precedence < (&self.peek_token).into() {
             match self.peek_token {
                 Token::PLUS
                 | Token::MINUS
@@ -242,31 +243,65 @@ impl<'a> Parser<'a> {
         Some(Expr::If(Box::new(cond), cons, alt))
     }
 
+    fn parse_function_expr(&mut self) -> Option<Expr> {
+        if !self.expect_peek(Token::LPAREN) {
+            return None;
+        }
+        let params = self.parse_function_params()?;
+        if !self.expect_peek(Token::LBRACE) {
+            return None;
+        }
+        let body = self.parse_block_stmt();
+        Some(Expr::Function(params, body))
+    }
+
+    fn parse_function_params(&mut self) -> Option<Vec<Ident>> {
+        let mut idents = Vec::new();
+        if self.is_peek_token(&Token::RPAREN) {
+            self.next_token();
+            return Some(idents);
+        }
+        self.next_token();
+        match self.parse_ident() {
+            Some(ident) => idents.push(ident),
+            _ => return None,
+        };
+        while self.is_peek_token(&Token::COMMA) {
+            self.next_token();
+            self.next_token();
+            match self.parse_ident() {
+                Some(ident) => idents.push(ident),
+                _ => return None,
+            };
+        }
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+        Some(idents)
+    }
+
     fn parse_ident(&mut self) -> Option<Ident> {
         match self.cur_token {
             Token::IDENT(ref ident) => Some(Ident(ident.clone())),
-            _ => unreachable!(),
+            _ => None,
         }
     }
 
     fn parse_ident_expr(&mut self) -> Option<Expr> {
-        match self.parse_ident() {
-            Some(ident) => Some(Expr::Ident(ident)),
-            _ => unreachable!(),
-        }
+        self.parse_ident().map(Expr::Ident)
     }
 
     fn parse_int_expr(&mut self) -> Option<Expr> {
         match self.cur_token {
             Token::INT(value) => Some(Expr::Int(value)),
-            _ => unreachable!(),
+            _ => None,
         }
     }
 
     fn parse_bool_expr(&mut self) -> Option<Expr> {
         match self.cur_token {
             Token::BOOL(value) => Some(Expr::Bool(value)),
-            _ => unreachable!(),
+            _ => None,
         }
     }
 }

@@ -4,12 +4,6 @@ use std::fmt::Display;
 #[derive(Debug)]
 pub struct Ident(pub String);
 
-impl Display for Ident {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 #[derive(Debug)]
 pub enum Prefix {
     Minus,
@@ -60,39 +54,7 @@ pub enum Expr {
     Prefix(Prefix, Box<Expr>),
     Infix(Infix, Box<Expr>, Box<Expr>),
     If(Box<Expr>, BlockStmt, Option<BlockStmt>),
-}
-
-impl Display for Expr {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Expr::Ident(ident) => write!(f, "{}", ident),
-            Expr::Int(value) => write!(f, "{}", value),
-            Expr::Bool(value) => write!(f, "{}", value),
-            Expr::Prefix(prefix, expr) => write!(f, "{}{}", prefix, expr),
-            Expr::Infix(infix, left, right) => write!(f, "({} {} {})", left, infix, right),
-            Expr::If(cond, cons, alt) => {
-                write!(
-                    f,
-                    "if {} {{{}}}{}",
-                    cond,
-                    cons.iter()
-                        .map(|stmt| stmt.to_string())
-                        .collect::<Vec<String>>()
-                        .join(" "),
-                    match alt {
-                        Some(alt) => format!(
-                            " else {{{}}}",
-                            alt.iter()
-                                .map(|stmt| stmt.to_string())
-                                .collect::<Vec<String>>()
-                                .join(" "),
-                        ),
-                        _ => "".to_string(),
-                    }
-                )
-            }
-        }
-    }
+    Function(Vec<Ident>, BlockStmt),
 }
 
 #[derive(Debug)]
@@ -100,16 +62,6 @@ pub enum Stmt {
     Let(Ident, Expr),
     Return(Expr),
     Expr(Expr),
-}
-
-impl Display for Stmt {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Stmt::Let(ident, expr) => write!(f, "let {} = {};", ident, expr),
-            Stmt::Return(expr) => write!(f, "return {};", expr),
-            Stmt::Expr(expr) => write!(f, "{}", expr),
-        }
-    }
 }
 
 pub type BlockStmt = Vec<Stmt>;
