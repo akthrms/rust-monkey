@@ -169,6 +169,10 @@ impl<'a> Parser<'a> {
                     self.next_token();
                     left = self.parse_infix_expr(left)?;
                 }
+                Token::LPAREN => {
+                    self.next_token();
+                    left = self.parse_call_expr(left)?;
+                }
                 _ => break,
             };
         }
@@ -256,28 +260,52 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_function_params(&mut self) -> Option<Vec<Ident>> {
-        let mut idents = Vec::new();
+        let mut params = Vec::new();
         if self.is_peek_token(&Token::RPAREN) {
             self.next_token();
-            return Some(idents);
+            return Some(params);
         }
         self.next_token();
         match self.parse_ident() {
-            Some(ident) => idents.push(ident),
+            Some(param) => params.push(param),
             _ => return None,
         };
         while self.is_peek_token(&Token::COMMA) {
             self.next_token();
             self.next_token();
             match self.parse_ident() {
-                Some(ident) => idents.push(ident),
+                Some(param) => params.push(param),
                 _ => return None,
             };
         }
         if !self.expect_peek(Token::RPAREN) {
             return None;
         }
-        Some(idents)
+        Some(params)
+    }
+
+    fn parse_call_expr(&mut self, func: Expr) -> Option<Expr> {
+        let args = self.parse_call_args()?;
+        Some(Expr::Call(Box::new(func), args))
+    }
+
+    fn parse_call_args(&mut self) -> Option<Vec<Expr>> {
+        let mut args = Vec::new();
+        if self.is_peek_token(&Token::RPAREN) {
+            self.next_token();
+            return Some(args);
+        }
+        self.next_token();
+        args.push(self.parse_expr(Precedence::Lowest)?);
+        while self.is_peek_token(&Token::COMMA) {
+            self.next_token();
+            self.next_token();
+            args.push(self.parse_expr(Precedence::Lowest)?);
+        }
+        if !self.expect_peek(Token::RPAREN) {
+            return None;
+        }
+        Some(args)
     }
 
     fn parse_ident(&mut self) -> Option<Ident> {

@@ -55,6 +55,7 @@ pub enum Expr {
     Infix(Infix, Box<Expr>, Box<Expr>),
     If(Box<Expr>, BlockStmt, Option<BlockStmt>),
     Function(Vec<Ident>, BlockStmt),
+    Call(Box<Expr>, Vec<Expr>),
 }
 
 #[derive(Debug)]
@@ -86,6 +87,7 @@ impl From<&Token> for Precedence {
             Token::LT | Token::GT => Precedence::LessGreater,
             Token::PLUS | Token::MINUS => Precedence::Sum,
             Token::ASTERISK | Token::SLASH => Precedence::Product,
+            Token::LPAREN => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }

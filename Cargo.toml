@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 rustyline = "11.0"
+whoami = "1.4"
