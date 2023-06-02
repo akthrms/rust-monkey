@@ -1,4 +1,4 @@
-use rust_monkey::{lexer::Lexer, parser::Parser};
+use rust_monkey::{evaluator::Evaluator, lexer::Lexer, parser::Parser};
 use rustyline::DefaultEditor;
 
 fn main() {
@@ -15,14 +15,17 @@ fn main() {
                 let lexer = Lexer::new(&line);
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program();
-                if parser.errors().is_empty() {
-                    println!("{:?}", program);
-                } else {
+                if !parser.errors().is_empty() {
                     println!("Woops! We ran into some monkey business here!");
                     println!(" parse error:");
                     for err in parser.errors() {
                         println!("\t{}", err);
                     }
+                    continue;
+                }
+                let mut evaluator = Evaluator::new();
+                if let Some(evaluated) = evaluator.eval(program) {
+                    println!("{}", evaluated);
                 }
             }
             Err(err) => {
