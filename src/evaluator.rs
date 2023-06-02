@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Expr, Infix, Prefix, Program, Stmt},
+    ast::{BlockStmt, Expr, Infix, Prefix, Program, Stmt},
     object::Object,
 };
 
@@ -15,7 +15,21 @@ impl Evaluator {
     pub fn eval(&mut self, program: Program) -> Option<Object> {
         let mut result = None;
         for stmt in program {
-            result = self.eval_stmt(stmt);
+            match self.eval_stmt(stmt) {
+                Some(Object::Return(object)) => return Some(*object),
+                object => result = object,
+            }
+        }
+        result
+    }
+
+    fn eval_stmts(&mut self, stmts: BlockStmt) -> Option<Object> {
+        let mut result = None;
+        for stmt in stmts {
+            match self.eval_stmt(stmt) {
+                Some(Object::Return(object)) => return Some(Object::Return(object)),
+                object => result = object,
+            }
         }
         result
     }
@@ -23,6 +37,7 @@ impl Evaluator {
     fn eval_stmt(&mut self, stmt: Stmt) -> Option<Object> {
         match stmt {
             Stmt::Expr(expr) => self.eval_expr(expr),
+            Stmt::Return(expr) => Some(Object::Return(Box::new(self.eval_expr(expr)?))),
             _ => unimplemented!(),
         }
     }
@@ -40,6 +55,7 @@ impl Evaluator {
                 let right = self.eval_expr(*right)?;
                 self.eval_infix_expr(infix, left, right)
             }
+            Expr::If(cond, cons, alt) => self.eval_if_expr(*cond, cons, alt),
             _ => unimplemented!(),
         }
     }
@@ -77,4 +93,24 @@ impl Evaluator {
             },
         }
     }
+
+    fn eval_if_expr(
+        &mut self,
+        cond: Expr,
+        cons: BlockStmt,
+        alt: Option<BlockStmt>,
+    ) -> Option<Object> {
+        let cond = self.eval_expr(cond)?;
+        if is_truthy(cond) {
+            self.eval_stmts(cons)
+        } else if alt.is_some() {
+            self.eval_stmts(alt.unwrap())
+        } else {
+            Some(Object::Null)
+        }
+    }
+}
+
+fn is_truthy(object: Object) -> bool {
+    !matches!(object, Object::Bool(false) | Object::Null)
 }
