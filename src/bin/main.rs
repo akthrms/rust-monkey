@@ -1,5 +1,6 @@
-use rust_monkey::{evaluator::Evaluator, lexer::Lexer, parser::Parser};
+use rust_monkey::{environment::Environment, evaluator::Evaluator, lexer::Lexer, parser::Parser};
 use rustyline::DefaultEditor;
+use std::{cell::RefCell, rc::Rc};
 
 fn main() {
     println!(
@@ -7,6 +8,9 @@ fn main() {
         whoami::username()
     );
     println!("Feel free to type in commands");
+
+    let env = Rc::new(RefCell::new(Environment::new()));
+    let mut evaluator = Evaluator::new(env);
 
     let mut rl = DefaultEditor::new().unwrap();
     loop {
@@ -23,7 +27,6 @@ fn main() {
                     }
                     continue;
                 }
-                let mut evaluator = Evaluator::new();
                 if let Some(evaluated) = evaluator.eval(program) {
                     println!("{}", evaluated);
                 }

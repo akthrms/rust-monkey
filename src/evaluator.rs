@@ -1,15 +1,18 @@
 use crate::{
-    ast::{BlockStmt, Expr, Infix, Prefix, Program, Stmt},
+    ast::{BlockStmt, Expr, Ident, Infix, Prefix, Program, Stmt},
+    environment::Environment,
     object::Object,
 };
+use std::{cell::RefCell, rc::Rc};
 
 #[derive(Debug)]
-pub struct Evaluator {}
+pub struct Evaluator {
+    env: Rc<RefCell<Environment>>,
+}
 
 impl Evaluator {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Evaluator {}
+    pub fn new(env: Rc<RefCell<Environment>>) -> Self {
+        Evaluator { env }
     }
 
     pub fn eval(&mut self, program: Program) -> Option<Object> {
@@ -45,12 +48,30 @@ impl Evaluator {
                 }
                 Some(Object::Return(Box::new(object)))
             }
-            _ => unimplemented!(),
+            Stmt::Let(name, expr) => {
+                let Ident(name) = name;
+                let object = self.eval_expr(expr)?;
+                if is_error(&object) {
+                    return Some(object);
+                }
+                self.env.borrow_mut().set(name, &object);
+                None
+            }
         }
     }
 
     fn eval_expr(&mut self, expr: Expr) -> Option<Object> {
         match expr {
+            Expr::Ident(name) => {
+                let Ident(name) = name;
+                self.env
+                    .borrow_mut()
+                    .get(name.clone())
+                    .or(Some(Object::Error(format!(
+                        "identifier not found: {}",
+                        name,
+                    ))))
+            }
             Expr::Int(value) => Some(Object::Int(value)),
             Expr::Bool(value) => Some(Object::Bool(value)),
             Expr::Prefix(prefix, right) => {
