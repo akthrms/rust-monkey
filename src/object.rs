@@ -6,6 +6,7 @@ pub enum Object {
     Bool(bool),
     Null,
     Return(Box<Object>),
+    Error(String),
 }
 
 impl Display for Object {
@@ -15,6 +16,7 @@ impl Display for Object {
             Object::Bool(value) => write!(f, "{}", value),
             Object::Null => write!(f, "null"),
             Object::Return(value) => write!(f, "{}", value),
+            Object::Error(value) => write!(f, "ERROR: {}", value),
         }
     }
 }

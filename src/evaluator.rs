@@ -17,6 +17,7 @@ impl Evaluator {
         for stmt in program {
             match self.eval_stmt(stmt) {
                 Some(Object::Return(object)) => return Some(*object),
+                object @ Some(Object::Error(_)) => return object,
                 object => result = object,
             }
         }
@@ -27,7 +28,7 @@ impl Evaluator {
         let mut result = None;
         for stmt in stmts {
             match self.eval_stmt(stmt) {
-                Some(Object::Return(object)) => return Some(Object::Return(object)),
+                object @ (Some(Object::Return(_)) | Some(Object::Error(_))) => return object,
                 object => result = object,
             }
         }
@@ -37,7 +38,13 @@ impl Evaluator {
     fn eval_stmt(&mut self, stmt: Stmt) -> Option<Object> {
         match stmt {
             Stmt::Expr(expr) => self.eval_expr(expr),
-            Stmt::Return(expr) => Some(Object::Return(Box::new(self.eval_expr(expr)?))),
+            Stmt::Return(expr) => {
+                let object = self.eval_expr(expr)?;
+                if is_error(&object) {
+                    return Some(object);
+                }
+                Some(Object::Return(Box::new(object)))
+            }
             _ => unimplemented!(),
         }
     }
@@ -48,11 +55,20 @@ impl Evaluator {
             Expr::Bool(value) => Some(Object::Bool(value)),
             Expr::Prefix(prefix, right) => {
                 let right = self.eval_expr(*right)?;
+                if is_error(&right) {
+                    return Some(right);
+                }
                 self.eval_prefix_expr(prefix, right)
             }
             Expr::Infix(infix, left, right) => {
                 let left = self.eval_expr(*left)?;
+                if is_error(&left) {
+                    return Some(left);
+                }
                 let right = self.eval_expr(*right)?;
+                if is_error(&right) {
+                    return Some(right);
+                }
                 self.eval_infix_expr(infix, left, right)
             }
             Expr::If(cond, cons, alt) => self.eval_if_expr(*cond, cons, alt),
@@ -69,7 +85,7 @@ impl Evaluator {
             },
             Prefix::Minus => match right {
                 Object::Int(value) => Some(Object::Int(-value)),
-                _ => Some(Object::Null),
+                object => Some(Object::Error(format!("unknown operator: -{}", object))),
             },
         }
     }
@@ -86,11 +102,20 @@ impl Evaluator {
                 Infix::Eq => Some(Object::Bool(left == right)),
                 Infix::Ne => Some(Object::Bool(left != right)),
             },
-            (left, right) => match infix {
+            (Object::Bool(left), Object::Bool(right)) => match infix {
                 Infix::Eq => Some(Object::Bool(left == right)),
                 Infix::Ne => Some(Object::Bool(left != right)),
-                _ => Some(Object::Null),
+                operator => Some(Object::Error(format!(
+                    "unknown operator: {} {} {}",
+                    Object::Bool(left),
+                    operator,
+                    Object::Bool(right)
+                ))),
             },
+            (left, right) => Some(Object::Error(format!(
+                "type mismatch: {} {} {}",
+                left, infix, right
+            ))),
         }
     }
 
@@ -101,6 +126,9 @@ impl Evaluator {
         alt: Option<BlockStmt>,
     ) -> Option<Object> {
         let cond = self.eval_expr(cond)?;
+        if is_error(&cond) {
+            return Some(cond);
+        }
         if is_truthy(cond) {
             self.eval_stmts(cons)
         } else if alt.is_some() {
@@ -113,4 +141,8 @@ impl Evaluator {
 
 fn is_truthy(object: Object) -> bool {
     !matches!(object, Object::Bool(false) | Object::Null)
+}
+
+fn is_error(object: &Object) -> bool {
+    matches!(object, Object::Error(_))
 }
