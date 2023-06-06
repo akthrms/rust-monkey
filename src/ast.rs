@@ -1,10 +1,10 @@
 use crate::token::Token;
 use std::fmt::Display;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ident(pub String);
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Prefix {
     Minus,
     Bang,
@@ -19,7 +19,7 @@ impl Display for Prefix {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Infix {
     Plus,
     Minus,
@@ -46,7 +46,7 @@ impl Display for Infix {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Ident(Ident),
     Int(i64),
@@ -58,7 +58,7 @@ pub enum Expr {
     Call(Box<Expr>, Vec<Expr>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Stmt {
     Let(Ident, Expr),
     Return(Expr),

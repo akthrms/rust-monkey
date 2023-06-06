@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use crate::{
+    ast::{BlockStmt, Ident},
+    environment::Environment,
+};
+use std::{cell::RefCell, fmt::Display, rc::Rc};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Object {
@@ -7,6 +11,7 @@ pub enum Object {
     Null,
     Return(Box<Object>),
     Error(String),
+    Function(Vec<Ident>, BlockStmt, Rc<RefCell<Environment>>),
 }
 
 impl Display for Object {
@@ -17,6 +22,7 @@ impl Display for Object {
             Object::Null => write!(f, "null"),
             Object::Return(value) => write!(f, "{}", value),
             Object::Error(value) => write!(f, "ERROR: {}", value),
+            Object::Function(_, _, _) => write!(f, "<FUNCTION>"),
         }
     }
 }

@@ -93,7 +93,14 @@ impl Evaluator {
                 self.eval_infix_expr(infix, left, right)
             }
             Expr::If(cond, cons, alt) => self.eval_if_expr(*cond, cons, alt),
-            _ => unimplemented!(),
+            Expr::Function(params, body) => Some(Object::Function(params, body, self.env.clone())),
+            Expr::Call(func, args) => {
+                let func = self.eval_expr(*func)?;
+                if is_error(&func) {
+                    return Some(func);
+                }
+                self.eval_call_expr(func, args)
+            }
         }
     }
 
@@ -157,6 +164,38 @@ impl Evaluator {
         } else {
             Some(Object::Null)
         }
+    }
+
+    fn eval_call_expr(&mut self, func: Object, args: Vec<Expr>) -> Option<Object> {
+        let mut objects = Vec::new();
+        for arg in args.iter() {
+            let object = self.eval_expr(arg.clone())?;
+            if is_error(&object) {
+                return Some(object);
+            }
+            objects.push(object);
+        }
+        let (params, body, env) = match func {
+            Object::Function(params, body, env) => (params, body, env),
+            object => return Some(Object::Error(format!("{} is not valid function", object))),
+        };
+        if args.len() != params.len() {
+            return Some(Object::Error(format!(
+                "wrong number of arguments: {} expected but {} given",
+                params.len(),
+                args.len(),
+            )));
+        }
+        let current_env = Rc::clone(&self.env);
+        let mut scoped_env = Environment::new_with_outer(Rc::clone(&env));
+        for (_, (ident, object)) in params.iter().zip(objects.iter()).enumerate() {
+            let Ident(name) = ident.clone();
+            scoped_env.set(name, object);
+        }
+        self.env = Rc::new(RefCell::new(scoped_env));
+        let object = self.eval_stmts(body)?;
+        self.env = current_env;
+        Some(object)
     }
 }
 

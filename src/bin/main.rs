@@ -1,4 +1,7 @@
-use rust_monkey::{environment::Environment, evaluator::Evaluator, lexer::Lexer, parser::Parser};
+use colored::Colorize;
+use rust_monkey::{
+    environment::Environment, evaluator::Evaluator, lexer::Lexer, object::Object, parser::Parser,
+};
 use rustyline::DefaultEditor;
 use std::{cell::RefCell, rc::Rc};
 
@@ -20,15 +23,21 @@ fn main() {
                 let mut parser = Parser::new(lexer);
                 let program = parser.parse_program();
                 if !parser.errors().is_empty() {
-                    println!("Woops! We ran into some monkey business here!");
-                    println!(" parse error:");
+                    println!("{}", "Woops! We ran into some monkey business here!".red());
+                    println!(" {}", "parse error:".red());
                     for err in parser.errors() {
-                        println!("\t{}", err);
+                        println!("\t{}", err.red());
                     }
                     continue;
                 }
                 if let Some(evaluated) = evaluator.eval(program) {
-                    println!("{}", evaluated);
+                    match evaluated {
+                        Object::Error(err) => {
+                            println!(" {}", "evaluate error:".red());
+                            println!("\t{}", err.red())
+                        }
+                        object => println!("{}", object),
+                    }
                 }
             }
             Err(err) => {
