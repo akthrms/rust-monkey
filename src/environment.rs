@@ -14,8 +14,8 @@ impl Environment {
 
     pub fn new_with_outer(outer: Rc<RefCell<Environment>>) -> Self {
         Environment {
-            store: HashMap::new(),
             outer: Some(outer),
+            ..Default::default()
         }
     }
 
