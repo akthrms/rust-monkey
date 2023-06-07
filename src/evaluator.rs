@@ -74,6 +74,7 @@ impl Evaluator {
             }
             Expr::Int(value) => Some(Object::Int(value)),
             Expr::Bool(value) => Some(Object::Bool(value)),
+            Expr::String(value) => Some(Object::String(value)),
             Expr::Prefix(prefix, right) => {
                 let right = self.eval_expr(*right)?;
                 if is_error(&right) {
@@ -113,7 +114,10 @@ impl Evaluator {
             },
             Prefix::Minus => match right {
                 Object::Int(value) => Some(Object::Int(-value)),
-                object => Some(Object::Error(format!("unknown operator: -{}", object))),
+                object => Some(Object::Error(format!(
+                    "unknown operator: - {}",
+                    object.get_type()
+                ))),
             },
         }
     }
@@ -130,19 +134,32 @@ impl Evaluator {
                 Infix::Eq => Some(Object::Bool(left == right)),
                 Infix::Ne => Some(Object::Bool(left != right)),
             },
+            (Object::String(left), Object::String(right)) => match infix {
+                Infix::Plus => Some(Object::String(format!("{}{}", left, right))),
+                Infix::Eq => Some(Object::Bool(left == right)),
+                Infix::Ne => Some(Object::Bool(left != right)),
+                operator => Some(Object::Error(format!(
+                    "unknown operator: {} {} {}",
+                    Object::String(left).get_type(),
+                    operator,
+                    Object::String(right).get_type()
+                ))),
+            },
             (Object::Bool(left), Object::Bool(right)) => match infix {
                 Infix::Eq => Some(Object::Bool(left == right)),
                 Infix::Ne => Some(Object::Bool(left != right)),
                 operator => Some(Object::Error(format!(
                     "unknown operator: {} {} {}",
-                    Object::Bool(left),
+                    Object::Bool(left).get_type(),
                     operator,
-                    Object::Bool(right)
+                    Object::Bool(right).get_type()
                 ))),
             },
             (left, right) => Some(Object::Error(format!(
                 "type mismatch: {} {} {}",
-                left, infix, right
+                left.get_type(),
+                infix,
+                right.get_type()
             ))),
         }
     }

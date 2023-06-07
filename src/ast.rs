@@ -51,6 +51,7 @@ pub enum Expr {
     Ident(Ident),
     Int(i64),
     Bool(bool),
+    String(String),
     Prefix(Prefix, Box<Expr>),
     Infix(Infix, Box<Expr>, Box<Expr>),
     If(Box<Expr>, BlockStmt, Option<BlockStmt>),

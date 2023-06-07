@@ -147,6 +147,7 @@ impl<'a> Parser<'a> {
             Token::IDENT(_) => self.parse_ident_expr()?,
             Token::INT(_) => self.parse_int_expr()?,
             Token::BOOL(_) => self.parse_bool_expr()?,
+            Token::STRING(_) => self.parse_string_expr()?,
             Token::MINUS | Token::BANG => self.parse_prefix_expr()?,
             Token::LPAREN => self.parse_grouped_expr()?,
             Token::IF => self.parse_if_expr()?,
@@ -329,6 +330,13 @@ impl<'a> Parser<'a> {
     fn parse_bool_expr(&mut self) -> Option<Expr> {
         match self.cur_token {
             Token::BOOL(value) => Some(Expr::Bool(value)),
+            _ => None,
+        }
+    }
+
+    fn parse_string_expr(&mut self) -> Option<Expr> {
+        match self.cur_token {
+            Token::STRING(ref value) => Some(Expr::String(value.clone())),
             _ => None,
         }
     }

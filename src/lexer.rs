@@ -63,6 +63,7 @@ impl<'a> Lexer<'a> {
             b'>' => Token::GT,
             b'{' => Token::LBRACE,
             b'}' => Token::RBRACE,
+            b'"' => self.read_string(),
             0 => Token::EOF,
             _ => {
                 if is_letter(self.ch) {
@@ -102,6 +103,17 @@ impl<'a> Lexer<'a> {
             self.read_char();
         }
         Token::INT(self.input[position..self.position].parse::<i64>().unwrap())
+    }
+
+    fn read_string(&mut self) -> Token {
+        let position = self.position + 1;
+        loop {
+            self.read_char();
+            if self.ch == b'"' || self.ch == 0 {
+                break;
+            }
+        }
+        Token::STRING(self.input[position..self.position].to_string())
     }
 
     fn skip_whitespace(&mut self) {
